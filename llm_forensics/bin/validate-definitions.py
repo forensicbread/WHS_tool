@@ -1,4 +1,4 @@
-#!/Users/jimin/Desktop/WHS_tool/llm_forensics_new/bin/python3.12
+#!/Users/jimin/Desktop/WHS_tool/llm_forensics/bin/python3.12
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
 """Script to validate dtFabric format definitions."""
