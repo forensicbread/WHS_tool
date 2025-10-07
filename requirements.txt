@@ -1,0 +1,5 @@
+pytsk3==20240323
+dfvfs==20240519
+libewf-python==20221025
+rich>=13.7
+click>=8.1
