@@ -1,0 +1,19 @@
+Metadata-Version: 2.4
+Name: dfdatetime
+Version: 20250730
+Summary: Digital Forensics date and time (dfDateTime).
+Home-page: https://github.com/log2timeline/dfdatetime
+Maintainer: Log2Timeline maintainers
+Maintainer-email: log2timeline-maintainers@googlegroups.com
+License: Apache License, Version 2.0
+Classifier: Development Status :: 3 - Alpha
+Classifier: Programming Language :: Python
+Requires-Python: >=3.9
+Description-Content-Type: text/plain
+License-File: ACKNOWLEDGEMENTS
+License-File: AUTHORS
+License-File: LICENSE
+License-File: README
+Dynamic: license-file
+
+dfDateTime, or Digital Forensics date and time, provides date and time objects to preserve accuracy and precision.
