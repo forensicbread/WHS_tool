@@ -1,0 +1,24 @@
+
+# local virtual envs
+llm_forensics/
+.venv*/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# local virtual envs
+llm_forensics/
+.venv*/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# local virtual envs
+.venv*/
+venv/
+env/
+__pycache__/
+*.pyc
+.DS_Store
