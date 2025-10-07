@@ -22,3 +22,13 @@ env/
 __pycache__/
 *.pyc
 .DS_Store
+.venv*/
+venv/
+env/
+__pycache__/
+*.pyc
+.DS_Store
+.venv-macos/
+.whs-macos/
+result/
+E01/
