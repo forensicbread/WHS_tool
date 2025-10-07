@@ -19,8 +19,8 @@ try:
         import dfvfs.vfs.tsk_file_entry
         from dfvfs.resolver import context
         from dfvfs.lib import definitions
-        from dfvfs.path import path_spec as dfvfs_path_spec 
-        from dfvfs.path import factory as path_spec_factory 
+        from dfvfs.path import path_spec as dfvfs_path_spec
+        from dfvfs.path import factory as path_spec_factory
         from dfvfs.resolver import resolver as path_spec_resolver
         TSK_FS_NAME_TYPE_REG = pytsk3.TSK_FS_NAME_TYPE_REG
         TSK_FS_NAME_TYPE_DIR = pytsk3.TSK_FS_NAME_TYPE_DIR
@@ -62,43 +62,17 @@ MODE_MAP = {
     "standalone": ["LMSTUDIO", "JAN"]
 }
 
-# --- ✨ [수정됨] LLM 아티팩트 경로에 추출 규칙 추가 ---
-# 각 경로를 단순 문자열에서 "path"와 "extract_from" 또는 "extract_files"를 포함하는 딕셔너리로 변경
+# --- LLM 아티팩트 경로 정의 (기존과 동일) ---
 LLM_ARTIFACTS = {
-    "LMSTUDIO": {
-        "Program_Execution_Traces": [
-            {"path": r"C:\Windows\Prefetch\LMSTUDIO*.pf", "extract_from": "Prefetch"},
-            {"path": r"C:\Users\*\AppData\Roaming\LM Studio\logs\main.log", "extract_from": "logs"},
-        ],
-        "User_Info": [
-            {"path": r"C:\Users\*\AppData\Roaming\LM Studio\user-profile.json", "extract_from": "user-profile.json"},
-        ],
-        "Prompt": [
-            {"path": r"C:\Users\*\.lmstudio\conversations\*.conversation.json", "extract_from": "conversations"},
-        ],
-        "File_Uploads": [
-            {"path": r"C:\Users\*\.lmstudio\user-files", "extract_from": "user-files"},
-        ],
-    },
-    "JAN": {
-        "Program_Execution_Traces": [
-            {"path": r"C:\Windows\Prefetch\JAN*.pf", "extract_from": "Prefetch"},
-            {"path": r"C:\Users\*\AppData\Roaming\Jan\logs\app.log", "extract_from": "logs"},
-        ],
-        "Prompt": [
-            {"path": r"C:\Users\*\AppData\Roaming\Jan\data\threads\thread.json", "extract_from": "threads"},
-            {"path": r"C:\Users\*\AppData\Roaming\Jan\data\threads\messages.jsonl", "extract_from": "threads"},
-        ],
-    },
     "CHATGPT": {
-        "User_Info_Prompt_File_Uploads": [
+        "Program_Execution_Traces": [
+            {"path": r"C:\Windows\Prefetch\CHATGPT*.pf", "extract_from": "Prefetch"},
+        ],
+        "User_Info+Prompt+File_Uploads": [
             {"path": r"C:\Users\*\AppData\Local\Packages\OpenAI.ChatGPT-Desktop_*\LocalCache\Roaming\ChatGPT\Cache\Cache_Data", "extract_from": "Cache_Data"},
         ],
         "Network": [
             {"path": r"C:\Users\*\AppData\Local\Packages\OpenAI.ChatGPT-Desktop_*\LocalCache\Roaming\ChatGPT\Network", "extract_files": ["Network Persistent State", "TransportSecurity", "Cookies"]},
-        ],
-        "Program_Execution_Traces": [
-            {"path": r"C:\Windows\Prefetch\CHATGPT*.pf", "extract_from": "Prefetch"},
         ],
     },
     "CLAUDE": {
@@ -110,16 +84,43 @@ LLM_ARTIFACTS = {
         "User_Info": [
             {"path": r"C:\Users\*\AppData\Roaming\Claude\Local Storage\leveldb", "extract_from": "leveldb"},
         ],
-        "Prompt": [
+        "Prompt+File_Uploads": [
             {"path": r"C:\Users\*\AppData\Roaming\Claude\Cache\Cache_Data", "extract_from": "Cache_Data"},
+            {"path": r"C:\Users\*\AppData\Roaming\Claude\Local Storage\leveldb", "extract_from": "leveldb"},
         ],
         "Network": [
             {"path": r"C:\Users\*\AppData\Roaming\Claude\Network", "extract_files": ["Network Persistent State", "TransportSecurity", "Cookies"]},
         ],
     },
+    "LMSTUDIO": {
+        "Program_Execution_Traces": [
+            {"path": r"C:\Windows\Prefetch\LM STUDIO*.pf", "extract_from": "Prefetch"},
+            {"path": r"C:\Users\*\AppData\Roaming\LM Studio\logs\main.log", "extract_from": "logs"},
+        ],
+        "User_Info": [
+            {"path": r"C:\Users\*\AppData\Roaming\LM Studio\user-profile.json", "extract_from": "user-profile.json"},
+        ],
+        "Prompt": [
+            {"path": r"C:\Users\*\.lmstudio\conversations\*.conversation.json", "extract_from": "conversations"},
+        ],
+        "File_Uploads": [
+            {"path": r"C:\Users\*\.lmstudio\user-files", "extract_from": "user-files"},
+        ],
+        "Network": [
+            {"path": r"C:\Users\*\.lmstudio\Network", "extract_files": ["Network Persistent State", "TransportSecurity", "Cookies"]},
+        ],
+    },
+    "JAN": {
+        "Program_Execution_Traces": [
+            {"path": r"C:\Windows\Prefetch\JAN*.pf", "extract_from": "Prefetch"},
+            {"path": r"C:\Users\*\AppData\Roaming\Jan\data\logs\app.log", "extract_from": "logs"},
+        ],
+        "Prompt": [
+            {"path": r"C:\Users\*\AppData\Roaming\Jan\data\threads", "extract_from": "threads"},
+        ],
+    },
 }
-
-# --- dfVFS 기반 TSK 파일 시스템 탐색 및 추출 로직 (기존과 동일) ---
+# --- dfVFS 기반 TSK 파일 시스템 탐색 및 추출 로직 (기존 함수 재사용) ---
 
 def normalize_path(path):
     normalized = path.replace('\\', '/')
@@ -140,19 +141,16 @@ def get_image_root_entry(image_path):
             fs_path_spec_raw = path_spec_factory.Factory.NewPathSpec(definitions.TYPE_INDICATOR_NTFS, location='/', parent=ewf_path_spec)
             root_entry = resolver.OpenFileEntry(fs_path_spec_raw)
         if not root_entry:
-            print(f"오류: E01 이미지에서 파일 시스템 루트를 찾을 수 없습니다. 파티션 구조를 확인하세요.", file=sys.stderr)
+            print(f"오류: E01 이미지에서 파일 시스템 루트를 찾을 수 없습니다.", file=sys.stderr)
             return None, None
         return root_entry, fs_path_spec
     except Exception as e:
         print(f"오류: dfVFS를 이용한 이미지 처리 중 오류 발생: {e}", file=sys.stderr)
         return None, None
 
-# ✨ [수정됨] 함수 시그니처에 artifact_info와 path_log_file 추가
-def recursive_search_and_extract(root_entry, path_parts, output_dir, extract_category, current_path_parts, artifact_info, path_log_file):
-    """기존 검색 로직을 유지하되, 추가 인자를 하위 함수로 전달합니다."""
+def recursive_search_and_extract(root_entry, path_parts, output_dir, extract_category, current_path_parts, artifact_info, collected_paths):
     if not path_parts:
-        # ✨ [수정됨] 추가 인자를 extract_item으로 전달
-        extract_item(root_entry, output_dir, extract_category, current_path_parts, artifact_info, path_log_file)
+        extract_item(root_entry, output_dir, extract_category, current_path_parts, artifact_info, collected_paths)
         return
 
     current_part, remaining_parts = path_parts[0], path_parts[1:]
@@ -163,8 +161,7 @@ def recursive_search_and_extract(root_entry, path_parts, output_dir, extract_cat
         for sub_entry in root_entry._GetSubFileEntries():
             name_str = sub_entry.name.decode('utf-8', 'ignore') if isinstance(sub_entry.name, bytes) else sub_entry.name
             if name_str in ['.', '..']: continue
-            # ✨ [수정됨] 재귀 호출 시 추가 인자 전달
-            recursive_search_and_extract(sub_entry, remaining_parts, output_dir, extract_category, current_path_parts + [name_str], artifact_info, path_log_file)
+            recursive_search_and_extract(sub_entry, remaining_parts, output_dir, extract_category, current_path_parts + [name_str], artifact_info, collected_paths)
     else:
         found_entries = []
         if '*' in current_part:
@@ -181,27 +178,36 @@ def recursive_search_and_extract(root_entry, path_parts, output_dir, extract_cat
                     break
         for found_entry in found_entries:
             name_str = found_entry.name.decode('utf-8', 'ignore') if isinstance(found_entry.name, bytes) else found_entry.name
-            # ✨ [수정됨] 재귀 호출 시 추가 인자 전달
-            recursive_search_and_extract(found_entry, remaining_parts, output_dir, extract_category, current_path_parts + [name_str], artifact_info, path_log_file)
+            recursive_search_and_extract(found_entry, remaining_parts, output_dir, extract_category, current_path_parts + [name_str], artifact_info, collected_paths)
 
-# ✨ [수정됨] 추출 및 로깅 로직을 반영하여 함수 재작성
-def extract_item(entry, output_dir, extract_category, current_path_parts, artifact_info, path_log_file):
-    """찾은 파일/디렉토리를 새 규칙에 따라 복사하고 경로를 txt 파일에 로깅합니다."""
+# ✨ [수정됨] BackEndError 발생 시 프로그램을 중지하는 대신 경고를 출력하고 계속 진행하도록 수정
+def extract_item(entry, output_dir, extract_category, current_path_parts, artifact_info, collected_paths):
     is_file = (hasattr(entry, 'IsFile') and entry.IsFile()) or (hasattr(entry, 'is_file') and entry.is_file)
     is_directory = (hasattr(entry, 'IsDirectory') and entry.IsDirectory()) or (hasattr(entry, 'is_directory') and entry.is_directory)
     original_full_path = '/' + '/'.join(current_path_parts)
 
-    # 특별 케이스: Network 폴더에서 특정 파일만 추출
+    # 경로를 collected_paths 딕셔너리에 추가
+    category_str = str(extract_category).replace('+', '_')
+    if category_str not in collected_paths:
+        collected_paths[category_str] = []
+    
+    # 중복된 경로가 추가되지 않도록 확인
+    if original_full_path not in collected_paths[category_str]:
+        collected_paths[category_str].append(original_full_path)
+
+    # 특별 케이스: Network 폴더
     if "extract_files" in artifact_info and is_directory:
         target_files_upper = [f.upper() for f in artifact_info["extract_files"]]
         print(f"  [탐색] '{original_full_path}'에서 지정된 파일 추출: {', '.join(artifact_info['extract_files'])}")
-        for sub_entry in entry._GetSubFileEntries():
-            sub_name = sub_entry.name.decode('utf-8', 'ignore') if isinstance(sub_entry.name, bytes) else sub_entry.name
-            if sub_name.upper() in target_files_upper:
-                # 찾은 파일에 대해 일반 추출 로직을 타도록 새 artifact_info를 만들어 재귀 호출
-                new_info = {"extract_from": sub_name}
-                extract_item(sub_entry, output_dir, extract_category, current_path_parts + [sub_name], new_info, path_log_file)
-        return # 이 디렉토리 자체나 다른 파일은 처리하지 않고 종료
+        try:
+            for sub_entry in entry._GetSubFileEntries():
+                sub_name = sub_entry.name.decode('utf-8', 'ignore') if isinstance(sub_entry.name, bytes) else sub_entry.name
+                if sub_name.upper() in target_files_upper:
+                    new_info = {"extract_from": sub_name}
+                    extract_item(sub_entry, output_dir, extract_category, current_path_parts + [sub_name], new_info, collected_paths)
+        except Exception as e:
+            print(f"  [경고] 디렉터리 '{original_full_path}'의 하위 항목을 읽는 중 오류 발생: {e}", file=sys.stderr)
+        return
 
     # 저장할 상대 경로 계산
     relative_path_parts = []
@@ -212,15 +218,12 @@ def extract_item(entry, output_dir, extract_category, current_path_parts, artifa
             start_index = upper_path_parts.index(extract_root_name)
             relative_path_parts = current_path_parts[start_index:]
         except ValueError:
-            relative_path_parts = [current_path_parts[-1]] # 못 찾으면 파일명만
-    else: # extract_from 규칙이 없는 경우 (extract_files 재귀 등)
+            relative_path_parts = [current_path_parts[-1]]
+    else:
         relative_path_parts = [current_path_parts[-1]]
-
     output_target = output_dir / extract_category / Path(*relative_path_parts)
-    
-    # 로그 파일에 원본 경로 기록
-    path_log_file.write(f"카테고리: {extract_category}\n - 원본 경로: {original_full_path}\n\n")
 
+    # 파일/디렉토리 추출 로직
     if is_file:
         output_target.parent.mkdir(parents=True, exist_ok=True)
         print(f"  [추출] 파일: {original_full_path} -> {output_target}")
@@ -235,67 +238,91 @@ def extract_item(entry, output_dir, extract_category, current_path_parts, artifa
                     file_object.close()
         except Exception as e:
             print(f"  [오류] 파일 쓰기 실패 ({output_target}): {e}", file=sys.stderr)
-
     elif is_directory:
         print(f"  [추출] 디렉토리: {original_full_path} -> {output_target}")
         output_target.mkdir(parents=True, exist_ok=True)
-        for sub_entry in entry._GetSubFileEntries():
-            sub_name = sub_entry.name.decode('utf-8', 'ignore') if isinstance(sub_entry.name, bytes) else sub_entry.name
-            if sub_name not in ['.', '..']:
-                extract_item(sub_entry, output_dir, extract_category, current_path_parts + [sub_name], artifact_info, path_log_file)
+        # ✨ [수정됨] 여기서 try...except 블록 추가
+        try:
+            for sub_entry in entry._GetSubFileEntries():
+                sub_name = sub_entry.name.decode('utf-8', 'ignore') if isinstance(sub_entry.name, bytes) else sub_entry.name
+                if sub_name not in ['.', '..']:
+                    extract_item(sub_entry, output_dir, extract_category, current_path_parts + [sub_name], artifact_info, collected_paths)
+        except Exception as e:
+            print(f"  [경고] 디렉터리 '{original_full_path}'의 하위 항목을 처리하는 중 오류 발생, 일부 파일을 건너뜁니다. 원인: {e}", file=sys.stderr)
 
 def main():
     """메인 함수: 명령줄 인수를 파싱하고 추출 작업을 시작합니다."""
-    parser = argparse.ArgumentParser(description="LLM 포렌식 아티팩트 추출 도구 (dfVFS 기반 E01 지원)")
-    parser.add_argument("E01_IMAGE_PATH", help="분석할 E01 이미지 파일 경로")
-    parser.add_argument("MODE", choices=["api", "standalone"], help="LLM 작동 방식 (api: CHATGPT, CLAUDE / standalone: LMSTUDIO, JAN)")
-    parser.add_argument("LLM_NAME", choices=list(LLM_ARTIFACTS.keys()), help="추출할 LLM 프로그램 이름 (JAN, LMSTUDIO, CHATGPT, CLAUDE)")
-    parser.add_argument("OUTPUT_DIR", help="추출된 파일이 저장될 결과 폴더 경로")
+
+    # ✨ [수정됨] 'usage' 파라미터에서 중복되는 "usage: " 단어를 제거했습니다.
+    parser = argparse.ArgumentParser(
+        description="LLM Forensic Artifact Extraction Tool (dfVFS based for E01 support)",
+        usage="%(prog)s <E01_IMAGE_PATH> <MODE> <LLM_NAME> <OUTPUT_DIR>",
+        epilog="Example:\n  %(prog)s C:\\image.E01 api CHATGPT C:\\results",
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument("E01_IMAGE_PATH",
+                        help="Path to the E01 image file to be analyzed")
+    parser.add_argument("MODE",
+                        choices=["api", "standalone"],
+                        help="LLM operation mode")
+    parser.add_argument("LLM_NAME",
+                        choices=list(LLM_ARTIFACTS.keys()),
+                        help="Name of the LLM program to extract artifacts from")
+    parser.add_argument("OUTPUT_DIR",
+                        help="Path to the output directory where artifacts will be saved")
+
     args = parser.parse_args()
     llm_name_upper = args.LLM_NAME.upper()
 
+    # --- 유효성 검증 로직 (기존과 동일) ---
     if llm_name_upper not in MODE_MAP.get(args.MODE, []):
-        # (유효성 검증 로직은 기존과 동일)
-        print(f"\n오류: '{args.LLM_NAME}'은(는) '{args.MODE}' 작동 방식에 속하지 않습니다.", file=sys.stderr)
+        print(f"\nError: '{args.LLM_NAME}' does not belong to the '{args.MODE}' mode.", file=sys.stderr)
+        if args.MODE == 'api':
+            print(f"Valid choices for 'api' mode are: {MODE_MAP['api']}", file=sys.stderr)
+        else:
+            print(f"Valid choices for 'standalone' mode are: {MODE_MAP['standalone']}", file=sys.stderr)
         sys.exit(1)
 
     if IS_MOCK_MODE:
-        # (Mock 모드 설명은 기존과 동일)
-        print("\n--- 실제 분석 실패: 라이브러리 임포트 오류로 인해 Mock 모드로 실행됩니다. ---")
+        print("\n--- Execution failed: Running in Mock Mode due to library import errors. ---")
         return
 
-    output_root = Path(args.OUTPUT_DIR)
-    output_root.mkdir(parents=True, exist_ok=True)
-    
-    print(f"이미지 파일 열기 및 파일 시스템 마운트: {args.E01_IMAGE_PATH}")
-    root_entry, fs_path_spec = get_image_root_entry(Path(args.E01_IMAGE_PATH))
+    program_output_dir = Path(args.OUTPUT_DIR) / llm_name_upper
+    program_output_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"Opening image file and mounting filesystem: {args.E01_IMAGE_PATH}")
+    root_entry, _ = get_image_root_entry(Path(args.E01_IMAGE_PATH))
     if root_entry is None: return
-    print(f"파일 시스템 루트 엔트리 확인됨.")
+    print("Filesystem root entry confirmed.")
 
-    # ✨ [수정됨] 로그 파일을 열고, 추출 루프를 with 블록 안으로 이동
-    path_log_file_path = output_root / "extracted_paths.txt"
+    collected_paths = {}
+
+    artifacts_to_extract = LLM_ARTIFACTS[llm_name_upper]
+    for category, artifacts in artifacts_to_extract.items():
+        print(f"\n--- Starting artifact extraction for category: {category} ---")
+        for artifact_info in artifacts:
+            full_path = artifact_info["path"]
+            normalized = normalize_path(full_path)
+            path_parts = normalized.split('/')
+            if not path_parts or not path_parts[0]: continue
+            print(f"Searching for pattern: {full_path}")
+            recursive_search_and_extract(root_entry, path_parts, program_output_dir, Path(category.replace('+', '_')), [], artifact_info, collected_paths)
+
+    path_log_file_path = program_output_dir / "extracted_paths.txt"
     with open(path_log_file_path, 'w', encoding='utf-8') as path_log_file:
-        path_log_file.write(f"--- LLM Forensic Artifacts Extracted Paths ({args.E01_IMAGE_PATH}) ---\n\n")
+        image_name = Path(args.E01_IMAGE_PATH).name
+        path_log_file.write(f"--- LLM Forensic Artifacts Extracted Paths (Source Image: {image_name}) ---\n")
+        
+        for category, paths in sorted(collected_paths.items()):
+            path_log_file.write(f"\n\n## {category.replace('_', '+')}\n")
+            path_log_file.write("---\n")
+            for path in sorted(paths):
+                path_log_file.write(f"- {path}\n")
 
-        artifacts_to_extract = LLM_ARTIFACTS[llm_name_upper]
-        for category, artifacts in artifacts_to_extract.items():
-            print(f"\n--- 아티팩트 카테고리 추출 시작: {category} ---")
-            
-            # ✨ [수정됨] 새로운 딕셔너리 구조에 맞춰 루프 수정
-            for artifact_info in artifacts:
-                full_path = artifact_info["path"]
-                normalized = normalize_path(full_path)
-                path_parts = normalized.split('/')
-                if not path_parts or not path_parts[0]: continue
+    print("\n--- All artifact extraction tasks are complete. ---")
+    print(f"Results saved to: {program_output_dir.resolve()}")
+    print(f"Extraction path log: {path_log_file_path.resolve()}")
 
-                print(f"탐색 패턴: {full_path}")
-                
-                # ✨ [수정됨] artifact_info와 path_log_file 핸들 전달
-                recursive_search_and_extract(root_entry, path_parts, output_root, Path(category), [], artifact_info, path_log_file)
-            
-    print("\n--- 모든 아티팩트 추출 작업 완료 ---")
-    print(f"결과 저장 경로: {output_root.resolve()}")
-    print(f"추출 경로 로그: {path_log_file_path.resolve()}")
 
 if __name__ == "__main__":
     main()
