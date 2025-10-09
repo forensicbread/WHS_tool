@@ -2,4 +2,3 @@ pytsk3==20250312
 dfvfs==20240505
 libewf-python==20240506
 rich>=13.7
-click>=8.1
