@@ -1,0 +1,126 @@
+{
+  "CHATGPT": {
+    "Program_Execution_Traces": [
+      {
+        "path": "C:\\Windows\\Prefetch\\CHATGPT*.pf",
+        "extract_from": "Prefetch"
+      }
+    ],
+    "User_Info+Prompt+File_Uploads": [
+      {
+        "path": "C:\\Users\\*\\AppData\\Local\\Packages\\OpenAI.ChatGPT-Desktop_*\\LocalCache\\Roaming\\ChatGPT\\Cache\\Cache_Data",
+        "extract_from": "Cache_Data"
+      }
+    ],
+    "Network": [
+      {
+        "path": "C:\\Users\\*\\AppData\\Local\\Packages\\OpenAI.ChatGPT-Desktop_*\\LocalCache\\Roaming\\ChatGPT\\Network",
+        "extract_files": [
+          "Network Persistent State",
+          "TransportSecurity",
+          "Cookies"
+        ]
+      }
+    ]
+  },
+  "CLAUDE": {
+    "Program_Execution_Traces": [
+      {
+        "path": "C:\\Windows\\Prefetch\\CLAUDE*.pf",
+        "extract_from": "Prefetch"
+      },
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\Claude\\logs\\main.log",
+        "extract_from": "logs"
+      },
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\Claude\\logs\\window.log",
+        "extract_from": "logs"
+      }
+    ],
+    "User_Info": [
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\Claude\\Local Storage\\leveldb",
+        "extract_from": "leveldb"
+      }
+    ],
+    "Prompt+File_Uploads": [
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\Claude\\Cache\\Cache_Data",
+        "extract_from": "Cache_Data"
+      },
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\Claude\\Local Storage\\leveldb",
+        "extract_from": "leveldb"
+      }
+    ],
+    "Network": [
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\Claude\\Network",
+        "extract_files": [
+          "Network Persistent State",
+          "TransportSecurity",
+          "Cookies"
+        ]
+      }
+    ]
+  },
+  "LMSTUDIO": {
+    "Program_Execution_Traces": [
+      {
+        "path": "C:\\Windows\\Prefetch\\LM STUDIO*.pf",
+        "extract_from": "Prefetch"
+      },
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\LM Studio\\logs\\main.log",
+        "extract_from": "logs"
+      }
+    ],
+    "User_Info": [
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\LM Studio\\user-profile.json",
+        "extract_from": "user-profile.json"
+      }
+    ],
+    "Prompt": [
+      {
+        "path": "C:\\Users\\*\\.lmstudio\\conversations\\*.conversation.json",
+        "extract_from": "conversations"
+      }
+    ],
+    "File_Uploads": [
+      {
+        "path": "C:\\Users\\*\\.lmstudio\\user-files",
+        "extract_from": "user-files"
+      }
+    ],
+    "Network": [
+      {
+        "path": "C:\\Users\\*\\.lmstudio\\Network",
+        "extract_files": [
+          "Network Persistent State",
+          "TransportSecurity",
+          "Cookies"
+        ]
+      }
+    ]
+  },
+  "JAN": {
+    "Program_Execution_Traces": [
+      {
+        "path": "C:\\Windows\\Prefetch\\JAN*.pf",
+        "extract_from": "Prefetch"
+      },
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\Jan\\data\\logs\\app.log",
+        "extract_from": "logs"
+      }
+    ],
+    "Prompt": [
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\Jan\\data\\threads",
+        "extract_from": "threads"
+      }
+    ]
+  }
+}
