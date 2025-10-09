@@ -122,5 +122,51 @@
         "extract_from": "threads"
       }
     ]
+  },
+  "_HEURISTICS_API": {
+    "Heuristic_Program_Execution": [
+      {
+        "path": "C:\\Windows\\Prefetch\\{LLM_NAME}*.pf",
+        "extract_from": "Prefetch"
+      }
+    ],
+    "Heuristic_Network_Cache": [
+      {
+        "path": "C:\\Users\\*\\AppData\\Local\\Packages\\*{LLM_NAME}*\\LocalCache\\Roaming\\{LLM_NAME}\\Network",
+        "extract_files": [
+          "Cookies",
+          "Network Persistent State"
+        ]
+      },
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}\\Network",
+        "extract_files": [
+          "Cookies",
+          "Network Persistent State"
+        ]
+      }
+    ]
+  },
+  "_HEURISTICS_STANDALONE": {
+    "Heuristic_Program_Execution": [
+      {
+        "path": "C:\\Windows\\Prefetch\\{LLM_NAME}*.pf",
+        "extract_from": "Prefetch"
+      },
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}\\logs\\main.log",
+        "extract_from": "logs"
+      },
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}\\logs\\app.log",
+        "extract_from": "logs"
+      }
+    ],
+    "Heuristic_User_Data": [
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}",
+        "extract_from": "{LLM_NAME}"
+      }
+    ]
   }
 }

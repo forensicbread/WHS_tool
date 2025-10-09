@@ -1,7 +1,14 @@
-# LLM Forensic Artifact Extraction Tool
+# LLM Forensic Artifact Extraction Tool – WHS_tool UI Style
+# Filename: extract_llm.py
 #
-# 지정된 E01 포렌식 이미지에서 LLM(Large Language Model) 애플리케-이션의 아티팩트를 추출한다.
-# dfVFS 라이브러리를 사용하여 파일 시스템에 접근하고, 정의된 경로 패턴에 따라 파일을 검색 및 복사한다.
+# UI Highlights:
+# - Header panel with tool name and run context
+# - [INFO]/[ALERT] lines for each category as it's processed
+# - Final "Extraction Complete" section with a styled summary table
+# - English polite final summary
+#
+# Defaults: keep '+', summary table ON, final summary ON
+# Opt-outs: --no-keep-plus --no-show-summary --no-final-summary
 #
 # Usage:
 #   python extract_llm.py <E01_IMAGE_PATH> <MODE> <LLM_NAME> <OUTPUT_DIR>
@@ -37,9 +44,7 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.align import Align
 from rich.box import HEAVY_HEAD
-# --- PROGRESS BAR START ---
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
-# --- PROGRESS BAR END ---
 
 console = Console()
 
@@ -121,7 +126,10 @@ def recursive_search_and_extract(root_entry, path_parts, output_dir, extract_cat
         else:
             found_entries = []
             if '*' in current_part:
-                pattern = re.compile(current_part.replace('.', r'\.').replace('*', '.*'), re.IGNORECASE)
+                # <<< 변경점: 플레이스홀더가 포함된 패턴매칭 지원
+                # re.escape를 사용하여 `.`과 같은 특수문자를 이스케이프하고, `*`만 와일드카드로 사용
+                pattern_str = '.*'.join(map(re.escape, current_part.split('*')))
+                pattern = re.compile(pattern_str, re.IGNORECASE)
                 for entry in root_entry._GetSubFileEntries():
                     file_name = entry.name.decode('utf-8', 'ignore') if isinstance(entry.name, bytes) else entry.name
                     if pattern.match(file_name): found_entries.append(entry)
@@ -160,11 +168,18 @@ def extract_item(entry, output_dir, extract_category, current_path_parts, artifa
         return
 
     relative_path_parts = []
+    # <<< 변경점: 플레이스홀더 지원
     extract_root_name = artifact_info.get("extract_from", "").upper().replace('\\', '/').split('/')[-1]
+    if "{LLM_NAME}" in extract_root_name:
+         # 휴리스틱 모드에서 extract_from이 동적일 경우, 프로그램 이름을 사용
+        llm_name_placeholder = artifact_info.get("llm_name_placeholder", "").upper()
+        extract_root_name = extract_root_name.replace("{LLM_NAME}", llm_name_placeholder)
+
     if extract_root_name:
         upper_path_parts = [p.upper() for p in current_path_parts]
         try:
-            start_index = upper_path_parts.index(extract_root_name)
+            # Find the last occurrence of the root name for correct relative path calculation
+            start_index = len(upper_path_parts) - 1 - upper_path_parts[::-1].index(extract_root_name)
             relative_path_parts = current_path_parts[start_index:]
         except ValueError:
             relative_path_parts = [current_path_parts[-1]]
@@ -236,7 +251,7 @@ def final_summary(collected_paths, llm_name, program_output_dir, path_log_file_p
             label = category_key if keep_plus else category_key.replace("+", "_")
             succeeded = sum(1 for p in paths if not str(p).startswith("[EXTRACTION_FAILED]"))
             failed = sum(1 for p in paths if str(p).startswith("[EXTRACTION_FAILED]"))
-            
+
             failed_str = f"[red]{failed}[/red]" if failed > 0 else str(failed)
             table.add_row(label, str(succeeded), failed_str)
         
@@ -273,11 +288,11 @@ def parse_args():
     )
     parser.add_argument("E01_IMAGE_PATH", help="Path to the E01 image file to be analyzed.")
     parser.add_argument("MODE", choices=["api", "standalone"], help="LLM operation mode.")
-    parser.add_argument("LLM_NAME", choices=list(LLM_ARTIFACTS.keys()), help="Name of the LLM program to extract artifacts from.")
+    # <<< 변경점: choices 제한을 제거하여 모든 문자열을 LLM_NAME으로 받을 수 있도록 함
+    parser.add_argument("LLM_NAME", help="Name of the LLM program to extract artifacts from.")
     parser.add_argument("OUTPUT_DIR", help="Path to the output directory where artifacts will be saved.")
     parser.add_argument("--no-keep-plus", action="store_true", help="Replace '+' with '_' in category folder names.")
     parser.add_argument("--no-show-summary", action="store_true", help="Disable the final summary table.")
-    # Renamed from --no-kr-summary for clarity
     parser.add_argument("--no-final-summary", action="store_true", help="Disable the final summary message.")
     return parser.parse_args()
 
@@ -292,26 +307,41 @@ def main():
         sys.exit(1)
 
     llm_name_upper = args.LLM_NAME.upper()
-    if llm_name_upper not in MODE_MAP.get(args.MODE, []):
-        console.print(f"\n[red]Error[/red]: '{args.LLM_NAME}' does not belong to the '{args.MODE}' mode.")
-        sys.exit(1)
+    
+    # <<< 변경점: 정의된 LLM인지, 아니면 휴리스틱 모드로 실행할지 결정하는 로직
+    is_defined_llm = llm_name_upper in LLM_ARTIFACTS
+    is_heuristic_mode = not is_defined_llm
+
+    if not is_defined_llm:
+        # api/standalone 모드에 따른 휴리스틱 키 결정
+        heuristic_key = f"_HEURISTICS_{args.MODE.upper()}"
+        if heuristic_key not in LLM_ARTIFACTS:
+            console.print(f"\n[red]Error[/red]: Heuristic definition '{heuristic_key}' not found in artifacts.json for unknown LLM '{args.LLM_NAME}'.")
+            sys.exit(1)
+        artifacts_to_extract = LLM_ARTIFACTS[heuristic_key]
+    else:
+        # 기존 로직: 정의된 LLM의 아티팩트 목록을 가져옴
+        if llm_name_upper not in MODE_MAP.get(args.MODE, []) and llm_name_upper not in ["CHATGPT", "CLAUDE", "LMSTUDIO", "JAN"]: # Known LLMs
+             console.print(f"\n[red]Error[/red]: '{args.LLM_NAME}' is a known LLM but does not belong to the '{args.MODE}' mode.")
+             sys.exit(1)
+        artifacts_to_extract = LLM_ARTIFACTS[llm_name_upper]
 
     program_output_dir = Path(args.OUTPUT_DIR) / llm_name_upper
     program_output_dir.mkdir(parents=True, exist_ok=True)
 
     header_panel(args.E01_IMAGE_PATH, llm_name_upper, args.MODE, str(program_output_dir.resolve()))
 
+    if is_heuristic_mode:
+        console.print(f"[yellow]Warning[/yellow]: '{args.LLM_NAME}' is not a predefined LLM. Running in [bold]Heuristic Discovery Mode[/bold] for '{args.MODE}' mode.")
+
     console.print(f"[INFO] Opening image file: {args.E01_IMAGE_PATH}")
     root_entry, _ = get_image_root_entry(e01_image_path)
     if root_entry is None: sys.exit(1)
     console.print("[INFO] Filesystem root entry confirmed.")
-
-    artifacts_to_extract = LLM_ARTIFACTS[llm_name_upper]
     console.print(f"[INFO] Starting artifact search for {len(artifacts_to_extract)} categories...")
 
     collected_paths = {}
     
-    # --- PROGRESS BAR START ---
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -322,7 +352,6 @@ def main():
     ) as progress:
         task = progress.add_task("[yellow]Processing categories...", total=len(artifacts_to_extract))
 
-        # --- Main extraction loop ---
         for category, artifacts in artifacts_to_extract.items():
             category_key = category if not args.no_keep_plus else category.replace('+', '_')
             path_category_key = Path(category_key)
@@ -333,7 +362,13 @@ def main():
             collected_paths[category_key] = []
             
             for artifact_info in artifacts:
+                # <<< 변경점: 휴리스틱 모드일 경우 경로의 플레이스홀더를 실제 LLM 이름으로 치환
                 full_path = artifact_info["path"]
+                if is_heuristic_mode:
+                    full_path = full_path.replace("{LLM_NAME}", llm_name_upper)
+                    # extract_from 값도 동적으로 설정될 수 있도록 placeholder 정보 전달
+                    artifact_info["llm_name_placeholder"] = llm_name_upper
+                
                 path_parts = normalize_path(full_path).split('/')
                 counter = {'count': 0}
                 recursive_search_and_extract(
@@ -342,15 +377,13 @@ def main():
                     collected_paths, counter
                 )
             
-            if IS_MOCK_MODE: time.sleep(0.5) # Simulate work in mock mode
+            if IS_MOCK_MODE: time.sleep(0.5)
             progress.update(task, advance=1)
         
         progress.update(task, description="[green]Extraction complete!")
 
     console.print("[INFO] Extraction process finished. Finalizing results...")
-    # --- PROGRESS BAR END ---
     
-    # This loop is now for post-run console output only
     for category_key in collected_paths.keys():
         paths = collected_paths[category_key]
         succeeded = sum(1 for p in paths if not str(p).startswith("[EXTRACTION_FAILED]"))
