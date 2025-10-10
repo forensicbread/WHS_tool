@@ -24,14 +24,13 @@ import time
 IS_MOCK_MODE = False
 
 try:
-    import pytsk3  # noqa: F401
+    import pytsk3
 except Exception as e:
     print(f"**FATAL ERROR**: Failed to import pytsk3. Reason: {e}", file=sys.stderr)
     IS_MOCK_MODE = True
 
 try:
     if not IS_MOCK_MODE:
-        import dfvfs.vfs.tsk_file_entry  # noqa: F401
         from dfvfs.lib import definitions
         from dfvfs.path import factory as path_spec_factory
         from dfvfs.resolver import resolver as path_spec_resolver
@@ -87,24 +86,53 @@ def normalize_path(path: str) -> str:
 
 
 def get_image_root_entry(image_path: Path):
+    """E01 이미지를 열고, 각 파티션을 순차적으로 직접 마운트하여 Windows 파티션을 찾습니다."""
     if IS_MOCK_MODE:
         return MockDir(name='\\'), None
-    try:
-        os_path_spec = path_spec_factory.Factory.NewPathSpec(definitions.TYPE_INDICATOR_OS, location=str(image_path))
-        ewf_path_spec = path_spec_factory.Factory.NewPathSpec(definitions.TYPE_INDICATOR_EWF, parent=os_path_spec)
-        volume_path_spec = path_spec_factory.Factory.NewPathSpec(definitions.TYPE_INDICATOR_TSK_PARTITION, location='/p3', parent=ewf_path_spec)
-        fs_path_spec = path_spec_factory.Factory.NewPathSpec(definitions.TYPE_INDICATOR_NTFS, location='/', parent=volume_path_spec)
-        resolver = path_spec_resolver.Resolver()
-        root_entry = resolver.OpenFileEntry(fs_path_spec)
-        if not root_entry:
-            fs_path_spec_raw = path_spec_factory.Factory.NewPathSpec(definitions.TYPE_INDICATOR_NTFS, location='/', parent=ewf_path_spec)
-            root_entry = resolver.OpenFileEntry(fs_path_spec_raw)
-        if not root_entry:
-            console.print("[red]Error[/red]: Could not mount NTFS filesystem."); return None, None
-        return root_entry, fs_path_spec
-    except Exception as e:
-        console.print(f"[red]Error[/red]: dfVFS backend error: {e}"); return None, None
 
+    try:
+        resolver = path_spec_resolver.Resolver
+        os_path_spec = path_spec_factory.Factory.NewPathSpec(
+            definitions.TYPE_INDICATOR_OS, location=str(image_path)
+        )
+        ewf_path_spec = path_spec_factory.Factory.NewPathSpec(
+            definitions.TYPE_INDICATOR_EWF, parent=os_path_spec
+        )
+    except Exception as e:
+        console.print(f"[bold red]FATAL[/bold red]: Could not initialize base path specs: {e}")
+        return None, None
+
+    # 최대 10개의 파티션을 순차적으로 검사
+    for i in range(1, 11):
+        try:
+            partition_location = f'/p{i}'
+            console.print(f"[INFO] Checking partition: [cyan]{partition_location}[/cyan]...")
+
+            # EWF 컨테이너에서 직접 TSK 파티션 경로를 지정 (가장 안정적인 방식)
+            partition_path_spec = path_spec_factory.Factory.NewPathSpec(
+                definitions.TYPE_INDICATOR_TSK_PARTITION,
+                location=partition_location,
+                parent=ewf_path_spec
+            )
+            
+            # 해당 파티션을 NTFS로 마운트 시도
+            ntfs_path_spec = path_spec_factory.Factory.NewPathSpec(
+                definitions.TYPE_INDICATOR_NTFS, location='/', parent=partition_path_spec
+            )
+
+            fs_root_entry = resolver.OpenFileEntry(ntfs_path_spec)
+
+            # Windows 폴더가 있는지 확인하여 OS 파티션인지 최종 판단
+            if fs_root_entry and fs_root_entry.GetSubFileEntryByName('Windows'):
+                console.print(f"[green][SUCCESS][/green] Found Windows OS at partition: [bold]{partition_location}[/bold]")
+                return fs_root_entry, ntfs_path_spec
+
+        except Exception:
+            # 해당 파티션이 없거나 NTFS가 아니면 조용히 다음으로 넘어감
+            continue
+
+    console.print("[bold red]FATAL[/bold red]: Could not find a partition containing a 'Windows' directory in the image.")
+    return None, None
 
 def recursive_search_and_extract(root_entry, path_parts, output_dir, extract_category, current_path_parts, artifact_info, collected_paths, counter):
     category_key = str(extract_category)
@@ -114,31 +142,37 @@ def recursive_search_and_extract(root_entry, path_parts, output_dir, extract_cat
         extract_item(root_entry, output_dir, extract_category, current_path_parts, artifact_info, collected_paths, counter); return
 
     current_part, remaining_parts = path_parts[0], path_parts[1:]
-    is_directory = (hasattr(root_entry, 'IsDirectory') and root_entry.IsDirectory()) or getattr(root_entry, 'is_directory', False)
+    is_directory = root_entry.IsDirectory()
     if not is_directory: return
 
     try:
         if current_part == '*':
-            for sub_entry in root_entry._GetSubFileEntries():
-                name_str = sub_entry.name.decode('utf-8', 'ignore') if isinstance(sub_entry.name, bytes) else sub_entry.name
+            for sub_entry in root_entry.sub_file_entries:
+                name_str = sub_entry.name
                 if name_str in ['.', '..']: continue
                 recursive_search_and_extract(sub_entry, remaining_parts, output_dir, extract_category, current_path_parts + [name_str], artifact_info, collected_paths, counter)
         else:
             found_entries = []
             if '*' in current_part:
-                # <<< 변경점: 플레이스홀더가 포함된 패턴매칭 지원
-                # re.escape를 사용하여 `.`과 같은 특수문자를 이스케이프하고, `*`만 와일드카드로 사용
                 pattern_str = '.*'.join(map(re.escape, current_part.split('*')))
                 pattern = re.compile(pattern_str, re.IGNORECASE)
-                for entry in root_entry._GetSubFileEntries():
-                    file_name = entry.name.decode('utf-8', 'ignore') if isinstance(entry.name, bytes) else entry.name
+                for entry in root_entry.sub_file_entries:
+                    file_name = entry.name
                     if pattern.match(file_name): found_entries.append(entry)
             else:
-                for entry in root_entry._GetSubFileEntries():
-                    file_name = entry.name.decode('utf-8', 'ignore') if isinstance(entry.name, bytes) else entry.name
-                    if file_name.upper() == current_part.upper(): found_entries.append(entry); break
+                # Attempt to get entry by name, case-sensitively first, then try case-insensitively if needed
+                entry = root_entry.GetSubFileEntryByName(current_part)
+                if not entry:
+                    # Fallback for case-insensitive filesystems
+                    for sub_entry in root_entry.sub_file_entries:
+                        if sub_entry.name.lower() == current_part.lower():
+                            entry = sub_entry
+                            break
+                if entry:
+                    found_entries.append(entry)
+
             for found_entry in found_entries:
-                name_str = found_entry.name.decode('utf-8', 'ignore') if isinstance(found_entry.name, bytes) else found_entry.name
+                name_str = found_entry.name
                 recursive_search_and_extract(found_entry, remaining_parts, output_dir, extract_category, current_path_parts + [name_str], artifact_info, collected_paths, counter)
     except Exception as e:
         error_message = f"[EXTRACTION_FAILED] Could not read directory '{'/'.join(current_path_parts)}': {e}"
@@ -146,8 +180,8 @@ def recursive_search_and_extract(root_entry, path_parts, output_dir, extract_cat
 
 
 def extract_item(entry, output_dir, extract_category, current_path_parts, artifact_info, collected_paths, counter):
-    is_file = (hasattr(entry, 'IsFile') and entry.IsFile()) or getattr(entry, 'is_file', False)
-    is_directory = (hasattr(entry, 'IsDirectory') and entry.IsDirectory()) or getattr(entry, 'is_directory', False)
+    is_file = entry.IsFile()
+    is_directory = entry.IsDirectory()
     original_full_path = '/' + '/'.join(current_path_parts)
     category_key = str(extract_category)
 
@@ -157,8 +191,8 @@ def extract_item(entry, output_dir, extract_category, current_path_parts, artifa
     if "extract_files" in artifact_info and is_directory:
         target_files_upper = [f.upper() for f in artifact_info["extract_files"]]
         try:
-            for sub_entry in entry._GetSubFileEntries():
-                sub_name = sub_entry.name.decode('utf-8', 'ignore') if isinstance(sub_entry.name, bytes) else sub_entry.name
+            for sub_entry in entry.sub_file_entries:
+                sub_name = sub_entry.name
                 if sub_name.upper() in target_files_upper:
                     new_info = {"extract_from": sub_name}
                     extract_item(sub_entry, output_dir, extract_category, current_path_parts + [sub_name], new_info, collected_paths, counter)
@@ -168,17 +202,14 @@ def extract_item(entry, output_dir, extract_category, current_path_parts, artifa
         return
 
     relative_path_parts = []
-    # <<< 변경점: 플레이스홀더 지원
     extract_root_name = artifact_info.get("extract_from", "").upper().replace('\\', '/').split('/')[-1]
     if "{LLM_NAME}" in extract_root_name:
-         # 휴리스틱 모드에서 extract_from이 동적일 경우, 프로그램 이름을 사용
         llm_name_placeholder = artifact_info.get("llm_name_placeholder", "").upper()
         extract_root_name = extract_root_name.replace("{LLM_NAME}", llm_name_placeholder)
 
     if extract_root_name:
         upper_path_parts = [p.upper() for p in current_path_parts]
         try:
-            # Find the last occurrence of the root name for correct relative path calculation
             start_index = len(upper_path_parts) - 1 - upper_path_parts[::-1].index(extract_root_name)
             relative_path_parts = current_path_parts[start_index:]
         except ValueError:
@@ -192,14 +223,14 @@ def extract_item(entry, output_dir, extract_category, current_path_parts, artifa
         counter['count'] += 1
         output_target.parent.mkdir(parents=True, exist_ok=True)
         try:
-            with open(output_target, 'wb') as outfile:
-                file_object = entry.GetFileObject()
-                if file_object:
+            file_object = entry.GetFileObject()
+            if file_object:
+                with open(output_target, 'wb') as outfile:
                     while True:
                         chunk = file_object.read(1024 * 1024)
                         if not chunk: break
                         outfile.write(chunk)
-                    file_object.close()
+                file_object.close()
         except Exception as e:
             error_message = f"[EXTRACTION_FAILED] Failed to write file '{original_full_path}' to '{output_target}': {e}"
             if error_message not in collected_paths[category_key]: collected_paths[category_key].append(error_message)
@@ -207,8 +238,8 @@ def extract_item(entry, output_dir, extract_category, current_path_parts, artifa
         counter['count'] += 1
         output_target.mkdir(parents=True, exist_ok=True)
         try:
-            for sub_entry in entry._GetSubFileEntries():
-                sub_name = sub_entry.name.decode('utf-8', 'ignore') if isinstance(sub_entry.name, bytes) else sub_entry.name
+            for sub_entry in entry.sub_file_entries:
+                sub_name = sub_entry.name
                 if sub_name not in ['.', '..']:
                     extract_item(sub_entry, output_dir, extract_category, current_path_parts + [sub_name], artifact_info, collected_paths, counter)
         except Exception as e:
@@ -288,7 +319,6 @@ def parse_args():
     )
     parser.add_argument("E01_IMAGE_PATH", help="Path to the E01 image file to be analyzed.")
     parser.add_argument("MODE", choices=["api", "standalone"], help="LLM operation mode.")
-    # <<< 변경점: choices 제한을 제거하여 모든 문자열을 LLM_NAME으로 받을 수 있도록 함
     parser.add_argument("LLM_NAME", help="Name of the LLM program to extract artifacts from.")
     parser.add_argument("OUTPUT_DIR", help="Path to the output directory where artifacts will be saved.")
     parser.add_argument("--no-keep-plus", action="store_true", help="Replace '+' with '_' in category folder names.")
@@ -308,22 +338,19 @@ def main():
 
     llm_name_upper = args.LLM_NAME.upper()
     
-    # <<< 변경점: 정의된 LLM인지, 아니면 휴리스틱 모드로 실행할지 결정하는 로직
     is_defined_llm = llm_name_upper in LLM_ARTIFACTS
     is_heuristic_mode = not is_defined_llm
 
     if not is_defined_llm:
-        # api/standalone 모드에 따른 휴리스틱 키 결정
         heuristic_key = f"_HEURISTICS_{args.MODE.upper()}"
         if heuristic_key not in LLM_ARTIFACTS:
             console.print(f"\n[red]Error[/red]: Heuristic definition '{heuristic_key}' not found in artifacts.json for unknown LLM '{args.LLM_NAME}'.")
             sys.exit(1)
         artifacts_to_extract = LLM_ARTIFACTS[heuristic_key]
     else:
-        # 기존 로직: 정의된 LLM의 아티팩트 목록을 가져옴
-        if llm_name_upper not in MODE_MAP.get(args.MODE, []) and llm_name_upper not in ["CHATGPT", "CLAUDE", "LMSTUDIO", "JAN"]: # Known LLMs
-             console.print(f"\n[red]Error[/red]: '{args.LLM_NAME}' is a known LLM but does not belong to the '{args.MODE}' mode.")
-             sys.exit(1)
+        known_llms = [k for k in LLM_ARTIFACTS.keys() if not k.startswith('_')]
+        if llm_name_upper in known_llms:
+             pass
         artifacts_to_extract = LLM_ARTIFACTS[llm_name_upper]
 
     program_output_dir = Path(args.OUTPUT_DIR) / llm_name_upper
@@ -337,7 +364,7 @@ def main():
     console.print(f"[INFO] Opening image file: {args.E01_IMAGE_PATH}")
     root_entry, _ = get_image_root_entry(e01_image_path)
     if root_entry is None: sys.exit(1)
-    console.print("[INFO] Filesystem root entry confirmed.")
+
     console.print(f"[INFO] Starting artifact search for {len(artifacts_to_extract)} categories...")
 
     collected_paths = {}
@@ -362,11 +389,9 @@ def main():
             collected_paths[category_key] = []
             
             for artifact_info in artifacts:
-                # <<< 변경점: 휴리스틱 모드일 경우 경로의 플레이스홀더를 실제 LLM 이름으로 치환
                 full_path = artifact_info["path"]
                 if is_heuristic_mode:
                     full_path = full_path.replace("{LLM_NAME}", llm_name_upper)
-                    # extract_from 값도 동적으로 설정될 수 있도록 placeholder 정보 전달
                     artifact_info["llm_name_placeholder"] = llm_name_upper
                 
                 path_parts = normalize_path(full_path).split('/')

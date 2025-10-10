@@ -123,14 +123,15 @@
       }
     ]
   },
+
   "_HEURISTICS_API": {
-    "Heuristic_Program_Execution": [
+    "Program_Execution_Traces": [
       {
         "path": "C:\\Windows\\Prefetch\\{LLM_NAME}*.pf",
         "extract_from": "Prefetch"
       }
     ],
-    "Heuristic_Network_Cache": [
+    "Network": [
       {
         "path": "C:\\Users\\*\\AppData\\Local\\Packages\\*{LLM_NAME}*\\LocalCache\\Roaming\\{LLM_NAME}\\Network",
         "extract_files": [
@@ -145,27 +146,48 @@
           "Network Persistent State"
         ]
       }
+    ],
+    "Cache": [
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}\\Cache\\Cache_Data",
+        "extract_from": "Cache_Data"
+      }
     ]
   },
-  "_HEURISTICS_STANDALONE": {
-    "Heuristic_Program_Execution": [
+"_HEURISTICS_STANDALONE": {
+    "Program_Execution_Traces": [
       {
         "path": "C:\\Windows\\Prefetch\\{LLM_NAME}*.pf",
         "extract_from": "Prefetch"
       },
       {
-        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}\\logs\\main.log",
-        "extract_from": "logs"
-      },
-      {
-        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}\\logs\\app.log",
+        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}\\logs\\*.log",
         "extract_from": "logs"
       }
     ],
-    "Heuristic_User_Data": [
+
+    "Prompts": [
       {
-        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}",
-        "extract_from": "{LLM_NAME}"
+        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}\\conversations",
+        "extract_from": "conversations"
+      },
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}\\threads",
+        "extract_from": "threads"
+      },
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}\\data\\threads",
+        "extract_from": "threads"
+      }
+    ],
+    "User_Info": [
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}\\user-profile.json",
+        "extract_from": "user-profile.json"
+      },
+      {
+        "path": "C:\\Users\\*\\AppData\\Roaming\\{LLM_NAME}\\user.json",
+        "extract_from": "user.json"
       }
     ]
   }
