@@ -23,13 +23,25 @@ dfVFS를 통해 E01 이미지를 읽고, 앱별로 정의된 경로 패턴 또�
 - **Python 패키지(필수)**:
   - `dfvfs`, `pytsk3`, `libewf-python`, `rich`
 - **네이티브 라이브러리**
-  - **Ubuntu/WSL**: `libtsk-dev`, `libewf-dev`, `libbde-dev`, `libfsntfs-dev`, `build-essential`, `python3-dev`
-  - **macOS(Homebrew)**: `sleuthkit`, `libewf`, `pkg-config`
   - **Windows**: WSL(우분투) 사용 권장
+  - **Ubuntu/WSL**: `libtsk-dev`, `libewf-dev`, `libbde-dev`, `libfsntfs-dev`, `build-essential`, `python3-dev`
+ 
+  - **macOS(Homebrew)**: `sleuthkit`, `libewf`, `pkg-config`
 
 ---
 
-## 설치/실행 – Windows
+## 설치 및 실행 (Installation & Execution)
+
+먼저 아래 명령어로 프로젝트를 복제(clone)하고 해당 디렉터리로 이동합니다.
+
+```bash
+# Git을 사용하여 프로젝트를 복제합니다.
+git clone https://github.com/bbibbi0425/WHS_tool.git
+cd WHS_tool
+```
+---
+
+### **윈도우 (WSL) 사용자**
 
 ### 방법 ① WSL‑Ubuntu **자동 설치 스크립트** — `setup_wsl.sh`
 Windows에서 WSL과 필수 패키지를 한 번에 설치/셋업합니다.
@@ -42,7 +54,8 @@ wsl --install -d Ubuntu
 # (WSL) 리포지토리로 이동
 cd "<YOUR_PATH_TO_WHS_tool>"
 
-# (WSL) 스크립트 실행 (CRLF 이슈 대비)
+# (WSL) 스크립트 권한 부여 및 실행
+chmod +x setup_wsl.sh
 sed -i 's/\r$//' setup_wsl.sh
 bash ./setup_wsl.sh
 
@@ -60,11 +73,6 @@ python whs_tool/cli.py "./E01/CLAUDE.E01" api CLAUDE "./result"
 - `libtsk-dev`, `libewf-dev`, `libbde-dev`, `libfsntfs-dev` 등 포렌식 네이티브 라이브러리 설치
 - 가상환경 생성/활성화 및 `requirements.txt` 설치
 - 기본 동작 확인을 위한 간단 실행 테스트(옵션)
-
-설치 후 실행 예시(WSL 터미널):
-```bash
-python extract_llm.py ./E01/CHATGPT.E01 api CHATGPT ./result
-```
 
 > 스크립트는 여러 번 실행해도 안전하도록 **idempotent**하게 작성합니다.
 
@@ -91,8 +99,10 @@ mkdir -p ~/venvs
 python3 -m venv --prompt whs-windows ~/venvs/whs-windows
 source ~/venvs/whs-windows/bin/activate
 
+# (WSL) 리포지토리로 이동
+cd "<YOUR_PATH_TO_WHS_tool>"
+
 # (WSL) 의존성 설치
-cd "/mnt/c/Users/<사용자명>/Desktop/논문/WHS_tool"   # 본인 경로로 수정
 python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 
@@ -106,27 +116,25 @@ python whs_tool/cli.py "./E01/CHATGPT.E01" api CHATGPT "./result"
 
 ---
 
-## 설치/실행 – macOS
+## macOS 사용자
 
 ```bash
-# 1) Xcode Command Line Tools(선택)
-xcode-select --install
+# (macOS 터미널) 리포지토리로 이동
+cd "<YOUR_PATH_TO_WHS_tool>"
 
-# 2) Homebrew(선택)로 네이티브 라이브러리 설치
-brew update
-brew install sleuthkit libewf pkg-config
+# (macOS 터미널) 스크립트에 실행 권한 부여
+chmod +x setup_macos.sh
 
-# 3) 가상환경 생성 및 활성화
-cd /path/to/WHS_tool
-python3 -m venv --prompt whs-macos .venv-macos
+# (macOS 터미널) 스크립트 실행
+./setup_macos.sh
+
+# --- 설치 완료 후 ---
+
+# (macOS 터미널) 가상환경 활성화
 source .venv-macos/bin/activate
 
-# 4) 파이썬 의존성 설치
-python -m pip install --upgrade pip setuptools wheel
-pip install -r requirements.txt
-
-# 5) 실행 예시
-python extract_llm.py ./E01/CHATGPT.E01 api CHATGPT ./result
+# (macOS 터미널) 프로그램 실행
+python -m whs_tool "./E01/CHATGPT.E01" api CHATGPT "./result"
 ```
 
 ---
@@ -135,14 +143,14 @@ python extract_llm.py ./E01/CHATGPT.E01 api CHATGPT ./result
 ## 사용법(Help) & 옵션
 
 ```bash
-python extract_llm.py --help
+python -m whs_tool --help
 ```
 
 ### 기본 사용
 ```bash
-python extract_llm.py <E01_IMAGE_PATH> <MODE> <LLM_NAME> <OUTPUT_DIR>
+python -m whs_tool <E01_IMAGE_PATH> <MODE> <LLM_NAME> <OUTPUT_DIR>
 # 예시
-python extract_llm.py ./E01/CHATGPT.E01 api CHATGPT ./result
+python -m whs_tool "./E01/CHATGPT.E01" api CHATGPT "./result"
 ```
 
 - `MODE`: `api` | `standalone`
