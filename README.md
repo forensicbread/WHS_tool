@@ -36,8 +36,8 @@ dfVFS를 통해 E01 이미지를 읽고, 앱별로 정의된 경로 패턴 또�
 
 ```bash
 # Git을 사용하여 프로젝트를 복제합니다.
-git clone https://github.com/bbibbi0425/WHS_tool.git
-cd WHS_tool
+ git clone https://github.com/forensicbreadWHS_tool.git
+ cd WHS_tool
 ```
 ---
 
@@ -56,16 +56,15 @@ cd "<YOUR_PATH_TO_WHS_tool>"
 
 # (WSL) 스크립트 권한 부여 및 실행
 chmod +x setup_wsl.sh
-sed -i 's/\r$//' setup_wsl.sh
-bash ./setup_wsl.sh
+sed -i 's/\r$//' setup_wsl.sh && bash ./setup_wsl.sh
 
 # (WSL) 가상환경 활성화
 source ~/venvs/whs-windows/bin/activate
 
 # (WSL) 실행 (둘 중 택1)
-python -m extract_llm "./E01/CLAUDE.E01" api CLAUDE "./result"
+python -m extract_llm ./E01/CLAUDE.E01 api CLAUDE ./result
 # 또는
-python extract_llm/cli.py "./E01/CLAUDE.E01" api CLAUDE "./result"
+python extract_llm/cli.py ./E01/CLAUDE.E01 api CLAUDE./result
 ```
 
 스크립트가 수행하는 작업(요약):
@@ -107,9 +106,9 @@ python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 
 # (WSL) 실행 (둘 중 택1)
-python -m extract_llm "./E01/CHATGPT.E01" api CHATGPT "./result"
+python -m extract_llm ./E01/CHATGPT.E01 api CHATGPT ./result
 # 또는
-python extract_llm/cli.py "./E01/CHATGPT.E01" api CHATGPT "./result"
+python extract_llm/cli.py ./E01/CHATGPT.E01 api CHATGPT ./result
 ```
 
 > 팁: 소스/E01는 `/mnt/c/...` 경로로 접근하면 권한/경로 이슈를 줄일 수 있습니다.
@@ -134,11 +133,10 @@ chmod +x setup_macos.sh
 source .venv-macos/bin/activate
 
 # (macOS 터미널) 프로그램 실행
-python -m extract_llm "./E01/CHATGPT.E01" api CHATGPT "./result"
+python -m extract_llm ./E01/CHATGPT.E01 api CHATGPT ./result
 ```
 
 ---
-
 
 ## 사용법(Help) & 옵션
 
@@ -149,8 +147,9 @@ python -m extract_llm --help
 ### 기본 사용
 ```bash
 python -m extract_llm <E01_IMAGE_PATH> <MODE> <LLM_NAME> <OUTPUT_DIR>
+
 # 예시
-python -m extract_llm "./E01/CHATGPT.E01" api CHATGPT "./result"
+python -m extract_llm ./E01/CHATGPT.E01 api CHATGPT ./result
 ```
 
 - `MODE`: `api` | `standalone`
