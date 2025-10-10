@@ -95,7 +95,7 @@ LLM_ARTIFACTS = load_artifact_definitions()
 
 
 def normalize_path(path: str) -> str:
-    """Windows 경로(\)를 POSIX 경로(/)로 변환하고 드라이브 문자를 제거하는 정규화 함수."""
+    """Windows 경로(\\)를 POSIX 경로(//)로 변환하고 드라이브 문자를 제거하는 정규화 함수."""
     normalized = path.replace('\\', '/')
     # C:/Users/... 같은 경로에서 'C:' 부분을 제거
     if ':' in normalized and (normalized.find(':') < normalized.find('/') if '/' in normalized else True):
