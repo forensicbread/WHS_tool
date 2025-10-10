@@ -1,4 +1,4 @@
-﻿from whs_tool.cli import main
+﻿from extract_llm.cli import main
 
 if __name__ == "__main__":
     raise SystemExit(main())

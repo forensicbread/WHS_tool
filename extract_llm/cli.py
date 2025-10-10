@@ -283,7 +283,7 @@ def extract_item(entry, output_dir, extract_category, current_path_parts, artifa
 def header_panel(image_path, llm_name, mode, output_dir):
     """프로그램 시작 시 실행 정보를 보여주는 헤더 패널을 출력하는 함수."""
     text = (
-        f"[bold]WHS_tool – LLM Forensic Artifact Extraction[/bold]\n"
+        f"[bold]extract_llm – LLM Forensic Artifact Extraction[/bold]\n"
         f"\n"
         f"[dim]Analyzing Image:[/dim] {image_path}\n"
         f"[dim]LLM Target:[/dim] {llm_name} ({mode})\n"
@@ -341,7 +341,7 @@ def write_extracted_paths_log(collected_paths, program_output_dir, image_name, l
     with open(path_log_file_path, 'w', encoding='utf-8') as f:
         # 헤더
         f.write("===============================================================\n")
-        f.write(" WHS_tool - LLM Forensic Artifact Extraction Log\n")
+        f.write(" extract_llm - LLM Forensic Artifact Extraction Log\n")
         f.write("===============================================================\n\n")
 
         # 실행 정보
@@ -395,7 +395,7 @@ def write_extracted_paths_log(collected_paths, program_output_dir, image_name, l
 def parse_args():
     """명령줄 인자(argument)를 파싱하는 함수."""
     parser = argparse.ArgumentParser(
-        description="WHS_tool: Extracts forensic artifacts of LLM applications from an E01 image.",
+        description="extract_llm: Extracts forensic artifacts of LLM applications from an E01 image.",
         formatter_class=argparse.RawTextHelpFormatter,
         epilog="Example:\n  python %(prog)s ./E01/CHATGPT.E01 api CHATGPT ./result"
     )

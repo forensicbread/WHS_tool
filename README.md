@@ -1,4 +1,4 @@
-# WHS_tool – LLM 포렌식 아티팩트 추출 도구
+# extract_llm – LLM 포렌식 아티팩트 추출 도구
 
 이 도구는 **E01 포렌식 이미지**에서 **LLM(예: ChatGPT, Claude, LM Studio, Jan, 그 외 미정의 LLM)** 애플리케이션의 **실행 흔적 / 사용자 정보 / 프롬프트 / 파일 업로드 / 네트워크 아티팩트**를 자동으로 수집해 결과 폴더로 복사함.
 
@@ -63,9 +63,9 @@ bash ./setup_wsl.sh
 source ~/venvs/whs-windows/bin/activate
 
 # (WSL) 실행 (둘 중 택1)
-python -m whs_tool "./E01/CLAUDE.E01" api CLAUDE "./result"
+python -m extract_llm "./E01/CLAUDE.E01" api CLAUDE "./result"
 # 또는
-python whs_tool/cli.py "./E01/CLAUDE.E01" api CLAUDE "./result"
+python extract_llm/cli.py "./E01/CLAUDE.E01" api CLAUDE "./result"
 ```
 
 스크립트가 수행하는 작업(요약):
@@ -107,9 +107,9 @@ python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 
 # (WSL) 실행 (둘 중 택1)
-python -m whs_tool "./E01/CHATGPT.E01" api CHATGPT "./result"
+python -m extract_llm "./E01/CHATGPT.E01" api CHATGPT "./result"
 # 또는
-python whs_tool/cli.py "./E01/CHATGPT.E01" api CHATGPT "./result"
+python extract_llm/cli.py "./E01/CHATGPT.E01" api CHATGPT "./result"
 ```
 
 > 팁: 소스/E01는 `/mnt/c/...` 경로로 접근하면 권한/경로 이슈를 줄일 수 있습니다.
@@ -134,7 +134,7 @@ chmod +x setup_macos.sh
 source .venv-macos/bin/activate
 
 # (macOS 터미널) 프로그램 실행
-python -m whs_tool "./E01/CHATGPT.E01" api CHATGPT "./result"
+python -m extract_llm "./E01/CHATGPT.E01" api CHATGPT "./result"
 ```
 
 ---
@@ -143,14 +143,14 @@ python -m whs_tool "./E01/CHATGPT.E01" api CHATGPT "./result"
 ## 사용법(Help) & 옵션
 
 ```bash
-python -m whs_tool --help
+python -m extract_llm --help
 ```
 
 ### 기본 사용
 ```bash
-python -m whs_tool <E01_IMAGE_PATH> <MODE> <LLM_NAME> <OUTPUT_DIR>
+python -m extract_llm <E01_IMAGE_PATH> <MODE> <LLM_NAME> <OUTPUT_DIR>
 # 예시
-python -m whs_tool "./E01/CHATGPT.E01" api CHATGPT "./result"
+python -m extract_llm "./E01/CHATGPT.E01" api CHATGPT "./result"
 ```
 
 - `MODE`: `api` | `standalone`

@@ -11,13 +11,13 @@ readme = "README.md"
 dependencies = []
 
 [project.scripts]
-whs-tool = "whs_tool.cli:main"
+whs-tool = "extract_llm.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["whs_tool*"]
+include = ["extract_llm*"]
 exclude = ["E01*", "result*", "tests*", "test*", "build*", "dist*"]
 
 # 패키지 내부 데이터 포함 — artifacts.json 등
 [tool.setuptools.package-data]
-whs_tool = ["artifacts.json", "data/*", "*.json"]
+extract_llm = ["artifacts.json", "data/*", "*.json"]
