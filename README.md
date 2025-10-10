@@ -37,11 +37,22 @@ Windows에서 WSL과 필수 패키지를 한 번에 설치/셋업합니다.
 ```powershell
 # PowerShell (관리자) — WSL 설치
 wsl --install -d Ubuntu
-# 재부팅 후, PowerShell에서 리포지토리 경로로 이동
+# 설치/재부팅 후, "Ubuntu" 앱(WSL 터미널)을 실행
+
+# (WSL) 리포지토리로 이동
 cd "<YOUR_PATH_TO_WHS_tool>"
 
-# WSL 내부에서 스크립트 실행
-wsl bash -lc "chmod +x ./setup_wsl.sh && ./setup_wsl.sh"
+# (WSL) 스크립트 실행 (CRLF 이슈 대비)
+sed -i 's/\r$//' setup_wsl.sh
+bash ./setup_wsl.sh
+
+# (WSL) 가상환경 활성화
+source ~/venvs/whs-windows/bin/activate
+
+# (WSL) 실행 (둘 중 택1)
+python -m whs_tool "./E01/CLAUDE.E01" api CLAUDE "./result"
+# 또는
+python whs_tool/cli.py "./E01/CLAUDE.E01" api CLAUDE "./result"
 ```
 
 스크립트가 수행하는 작업(요약):
@@ -65,23 +76,30 @@ WSL을 직접 설치한 뒤, 필요한 패키지/가상환경을 수동으로 �
 ```powershell
 # PowerShell (관리자) — WSL 설치
 wsl --install -d Ubuntu
+# 설치/재부팅 후, "Ubuntu" 앱(WSL 터미널)을 실행
 ```
 
 ```bash
 # (WSL) 네이티브 라이브러리 설치
 sudo apt update
-sudo apt install -y python3-venv python3-dev build-essential   libtsk-dev libewf-dev libbde-dev libfsntfs-dev
+sudo apt install -y \
+  python3-venv python3-dev build-essential \
+  libtsk-dev libewf-dev libbde-dev libfsntfs-dev
 
 # (WSL) 가상환경 생성/활성화
 mkdir -p ~/venvs
 python3 -m venv --prompt whs-windows ~/venvs/whs-windows
 source ~/venvs/whs-windows/bin/activate
 
-# (WSL) 의존성 설치 및 실행
-cd "<YOUR_PATH_TO_WHS_tool>"
+# (WSL) 의존성 설치
+cd "/mnt/c/Users/<사용자명>/Desktop/논문/WHS_tool"   # 본인 경로로 수정
 python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
-python extract_llm.py ./E01/CHATGPT.E01 api CHATGPT ./result
+
+# (WSL) 실행 (둘 중 택1)
+python -m whs_tool "./E01/CHATGPT.E01" api CHATGPT "./result"
+# 또는
+python whs_tool/cli.py "./E01/CHATGPT.E01" api CHATGPT "./result"
 ```
 
 > 팁: 소스/E01는 `/mnt/c/...` 경로로 접근하면 권한/경로 이슈를 줄일 수 있습니다.
