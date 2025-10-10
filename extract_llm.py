@@ -297,19 +297,65 @@ def final_summary(collected_paths, llm_name, program_output_dir, path_log_file_p
         console.print(f"[dim]Result Folder:[/dim] {program_output_dir.resolve()}")
 
 
-def write_extracted_paths_log(collected_paths, program_output_dir, image_name, keep_plus=True):
-    path_log_file_path = Path(program_output_dir) / "extracted_paths.txt"
-    with open(path_log_file_path, 'w', encoding='utf-8') as f:
-        f.write(f"--- LLM Forensic Artifacts Extracted Paths (Source Image: {image_name}) ---\n")
-        f.write(f"--- Timestamp: {datetime.now().isoformat()} ---\n")
-        for category_key, paths in sorted(collected_paths.items()):
-            header = category_key if keep_plus else category_key.replace('_', '+')
-            f.write(f"\n\n## {header}\n")
-            f.write("---\n")
-            for p in sorted(paths):
-                f.write(f"- {p}\n")
-    return path_log_file_path
+def write_extracted_paths_log(collected_paths, program_output_dir, image_name, llm_name, mode, keep_plus=True):
+    """Generates a user-friendly, detailed log file of all found and failed artifact paths."""
+    path_log_file_path = Path(program_output_dir) / "extraction_report.txt"
+    
+    total_succeeded = 0
+    total_failed = 0
+    for paths in collected_paths.values():
+        total_succeeded += sum(1 for p in paths if not str(p).startswith("[EXTRACTION_FAILED]"))
+        total_failed += sum(1 for p in paths if str(p).startswith("[EXTRACTION_FAILED]"))
 
+    with open(path_log_file_path, 'w', encoding='utf-8') as f:
+        f.write("===============================================================\n")
+        f.write(" WHS_tool - LLM Forensic Artifact Extraction Log\n")
+        f.write("===============================================================\n\n")
+
+        f.write("Run Details\n")
+        f.write("-----------\n")
+        f.write(f"- Source Image: {image_name}\n")
+        f.write(f"- LLM Target: {llm_name} (Mode: {mode})\n")
+        f.write(f"- Output Directory: {program_output_dir.resolve()}\n")
+        f.write(f"- Timestamp: {datetime.now().isoformat()}\n\n")
+
+        f.write("Extraction Summary\n")
+        f.write("------------------\n")
+        f.write(f"- Categories Processed: {len(collected_paths)}\n")
+        f.write(f"- Successful Extractions: {total_succeeded}\n")
+        f.write(f"- Failed Extractions: {total_failed}\n\n")
+
+        f.write("===============================================================\n")
+        f.write(" Detailed Path Log\n")
+        f.write("===============================================================\n")
+
+        for category_key, paths in sorted(collected_paths.items()):
+            header = category_key if keep_plus else category_key.replace('+', '_')
+            succeeded = sum(1 for p in paths if not str(p).startswith("[EXTRACTION_FAILED]"))
+            failed = len(paths) - succeeded
+            
+            f.write(f"\n\n## Category: {header} ({succeeded} succeeded, {failed} failed)\n")
+            f.write("---------------------------------------------------------------\n")
+            
+            if not paths:
+                f.write("- No paths found for this category.\n")
+                continue
+
+            sorted_paths = sorted(paths, key=lambda p: "ZZZ" if "[EXTRACTION_FAILED]" in p else p)
+
+            for p in sorted_paths:
+                if str(p).startswith("[EXTRACTION_FAILED]"):
+                    status = "[FAILED] "
+                    # Remove the prefix for cleaner logging
+                    path_to_log = p.replace("[EXTRACTION_FAILED] ", "")
+                else:
+                    status = "[SUCCESS]"
+                    path_to_log = p
+                f.write(f"{status.ljust(10)} {path_to_log}\n")
+
+        f.write("\n\n--- End of Report ---\n")
+        
+    return path_log_file_path
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -421,7 +467,14 @@ def main():
             console.print(f"[green][INFO][/green] {label}: {succeeded} extracted, {failed} failed")
 
 
-    path_log_file_path = write_extracted_paths_log(collected_paths, program_output_dir, e01_image_path.name, keep_plus=not args.no_keep_plus)
+    path_log_file_path = write_extracted_paths_log(
+        collected_paths=collected_paths,
+        program_output_dir=program_output_dir,
+        image_name=e01_image_path.name,
+        llm_name=llm_name_upper,
+        mode=args.MODE,
+        keep_plus=not args.no_keep_plus
+    )
     
     final_summary(
         collected_paths=collected_paths,
